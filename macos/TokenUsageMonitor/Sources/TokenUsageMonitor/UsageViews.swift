@@ -21,16 +21,21 @@ struct ContextUsageCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("当前上下文").font(.subheadline.weight(.semibold))
-            if monitor.taskRecords.isEmpty {
-                Text("暂无可选择的任务").font(.caption).foregroundStyle(.secondary)
-            } else {
-                Picker("查看任务", selection: $monitor.selectedContextTaskID) {
-                    ForEach(monitor.taskRecords) { task in Text(task.displayTitle).tag(task.id) }
+            HStack {
+                Text(monitor.contextSelection.pinnedID == nil ? "最近活动上下文" : "所选任务上下文")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if monitor.contextSelection.pinnedID != nil {
+                    Button("返回最近活动") { monitor.selectContextTask(nil) }
+                        .font(.caption).usageHover()
                 }
-                .labelsHidden()
-                .help("选择要查看上下文的任务；任务列表中的行也可点击")
-                if let snapshot = monitor.contextSnapshot, snapshot.threadId == monitor.selectedContextTaskID {
+            }
+            if let task = monitor.selectedContextTask {
+                Text(task.displayTitle).font(.caption.weight(.medium)).lineLimit(2)
+                    .help("\(task.displayTitle)\n任务编号：\(task.id)")
+                Text("\(task.id.suffix(8)) · \(monitor.contextSelection.pinnedID == nil ? "自动跟随最近更新" : "固定查看")\(task.archived ? " · 已归档" : "")")
+                    .font(.caption2).foregroundStyle(.secondary)
+                if let snapshot = monitor.contextSnapshot, snapshot.threadId == task.id {
                     if snapshot.error == nil, let tokens = snapshot.tokens {
                         HStack {
                             Text("\(tokens.formatted()) tokens").font(.subheadline.monospacedDigit().weight(.semibold))
@@ -53,10 +58,15 @@ struct ContextUsageCard: View {
                         Text(snapshot.unavailableReason).font(.caption).foregroundStyle(.secondary)
                     }
                 } else {
-                    Text(monitor.isRefreshingTasks ? "正在读取上下文…" : "上下文暂不可用").font(.caption).foregroundStyle(.secondary)
+                    Text(monitor.isRefreshingContext ? "正在读取上下文…" : "上下文暂不可用").font(.caption).foregroundStyle(.secondary)
                 }
+                Text("此任务累计 \(task.tokens.formatted()) tokens")
+                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+            } else {
+                Text("暂无未归档的活动任务，可从下方选择历史任务。")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            Text("最近一次可观测的上下文占用，不等于任务累计用量；压缩或继续执行后可能变化。")
+            Text("按本地任务更新时间跟随，不代表 Codex 前台任务。这里是最近上报的上下文快照，压缩或继续执行后可能变化。")
                 .font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)

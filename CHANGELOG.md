@@ -2,6 +2,15 @@
 
 All notable changes to Token监测 are documented here.
 
+## [1.7.1] - 2026-09-16
+
+### Fixed
+
+- Replace duplicate context selectors with one searchable task list; exclude the viewed task and deduplicate records by task ID while retaining distinct same-name tasks with short identifiers.
+- Distinguish automatic follow of the latest updated non-archived task from fixed historical selection, with a return action and fallback when a selected task leaves the available records.
+- Read context independently of task/API queries, coalesce rapid switches and reject obsolete responses using request revisions.
+- Add Swift regressions for deterministic deduplication, selection/history separation, follow/pin behavior and rapid A–B–A switching.
+
 ## [1.7.0] - 2026-09-09
 
 ### Added

@@ -33,3 +33,7 @@ Full automatic app installation updates, signing accounts/notarization, relay cr
 ## Authorization and risks
 
 User approved this previously discussed implementation and local/GitHub synchronization; handoff authorizes commits, push and Release. Preserve data/preferences and retain prior app for rollback. Runtime metadata availability varies, so unknown/stale context must remain visible rather than presented as complete real-time context. Do not contact a relay or handle keys to test integration. Only usage metadata is persisted.
+
+## 1.7.1 context switching correction (2026-09-16)
+
+User requests clearer context switching and removal of duplicate history presentation, with local/GitHub synchronization. Replace the duplicated picker/row selectors with one searchable task history; exclude the selected task from that list, retain same-name distinct IDs, and normalize duplicate IDs deterministically. Default follows the most recently updated non-archived task (not foreground detection); manual selection stays fixed until return or removal from the available list. Give context reads their own queue and revision guard so rapid switches cannot publish obsolete snapshots. Preserve user data and API behavior. Verify selection/normalization/race acceptance with Swift regression checks, all Python tests, build/signature, independent review, available native UI, plugin validation, exact-commit CI and release archive checks. Ship patch 1.7.1 build 14 under existing authorization.

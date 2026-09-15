@@ -18,13 +18,10 @@ final class MonitorStore: ObservableObject {
     @Published private(set) var apiReadAt: Date?
     @Published private(set) var apiActivity: [String: APIActivity] = [:]
     @Published private(set) var contextSnapshot: ContextSnapshot?
-    @Published var selectedContextTaskID = "" {
-        didSet {
-            guard oldValue != selectedContextTaskID else { return }
-            contextSnapshot = nil
-            refreshTasks()
-        }
-    }
+    @Published private(set) var contextSelection = ContextTaskSelection()
+    @Published private(set) var isRefreshingContext = false
+    var selectedContextTask: TaskUsageRecord? { contextSelection.selected(in: taskRecords) }
+    var contextHistory: [TaskUsageRecord] { contextSelection.history(in: taskRecords) }
     @Published private(set) var apiChannels: [APIChannel] = []
     @Published var selectedAPIChannel: String {
         didSet { defaults.set(selectedAPIChannel, forKey: "api.selectedChannel") }
@@ -68,6 +65,8 @@ final class MonitorStore: ObservableObject {
     private let defaults = UserDefaults.standard
     private let worker = DispatchQueue(label: "token-monitor.collector", qos: .utility)
     private let taskWorker = DispatchQueue(label: "token-monitor.local-records", qos: .utility)
+    private let contextWorker = DispatchQueue(label: "token-monitor.context", qos: .userInitiated)
+    private var contextReadPending = false
     private let workerKey = DispatchSpecificKey<Bool>()
     private var timer: DispatchSourceTimer?
     private var taskTimer: DispatchSourceTimer?
@@ -98,7 +97,7 @@ final class MonitorStore: ObservableObject {
         }
         if let data = try? Data(contentsOf: taskRecordsURL),
            let saved = try? JSONDecoder().decode(TaskRecordsCache.self, from: data), saved.version == 2 {
-            taskRecords = saved.records
+            taskRecords = ContextTaskSelection.normalized(saved.records)
         } else {
             taskRecords = []
         }
@@ -446,7 +445,6 @@ final class MonitorStore: ObservableObject {
     func refreshTasks() {
         guard !stopped, !isRefreshingTasks else { return }
         isRefreshingTasks = true
-        let requestedID = selectedContextTaskID
         taskWorker.async { [weak self] in
             guard let self else { return }
             let tasks = Result { try self.readTaskRecords() }
@@ -454,15 +452,18 @@ final class MonitorStore: ObservableObject {
             let totals = Result { try self.readAPIUsageTotals() }
             let activity = Result { try self.readAPIActivity() }
             let healthy = self.isAPIUsageServerHealthy()
-            let records = try? tasks.get()
-            let contextID = requestedID.isEmpty ? (records?.first?.id ?? "") : requestedID
-            let context = contextID.isEmpty ? nil : self.readContext(threadID: contextID)
             DispatchQueue.main.async {
                 guard !self.stopped else { self.isRefreshingTasks = false; return }
                 switch tasks {
                 case .success(let rows):
-                    self.taskRecords = rows
-                    self.persistTaskRecords(rows)
+                    let previousID = self.selectedContextTask?.id
+                    self.taskRecords = ContextTaskSelection.normalized(rows)
+                    self.contextSelection.reconcile(with: self.taskRecords)
+                    if previousID != self.selectedContextTask?.id {
+                        self.contextSnapshot = nil
+                        _ = self.contextSelection.beginRead() // Invalidate any previous task's in-flight result.
+                    }
+                    self.persistTaskRecords(self.taskRecords)
                     self.tasksReadAt = Date()
                     self.taskReadError = nil
                 case .failure:
@@ -480,12 +481,38 @@ final class MonitorStore: ObservableObject {
                 } catch { self.apiReadError = "读取失败，保留上次 API 数据" }
                 self.apiMonitorAvailable = healthy
                 self.isRefreshingTasks = false
-                if self.selectedContextTaskID.isEmpty, !contextID.isEmpty {
-                    // Setting the initial selection triggers one fresh local read.
-                    self.selectedContextTaskID = contextID
+                self.refreshContext()
+            }
+        }
+    }
+
+    func selectContextTask(_ id: String?) {
+        contextSelection.select(id)
+        contextSnapshot = nil
+        refreshContext()
+    }
+
+    func refreshContext() {
+        guard !stopped else { return }
+        guard let task = selectedContextTask else {
+            contextSnapshot = nil
+            return
+        }
+        // Coalesce rapid switches into one follow-up read, never a queue of old selections.
+        guard !isRefreshingContext else { contextReadPending = true; return }
+        isRefreshingContext = true
+        contextReadPending = false
+        let request = contextSelection.beginRead()
+        contextWorker.async { [weak self] in
+            guard let self else { return }
+            let value = self.readContext(threadID: task.id)
+            DispatchQueue.main.async {
+                self.isRefreshingContext = false
+                guard !self.stopped else { return }
+                if self.contextSelection.accepts(request, threadID: task.id, records: self.taskRecords) {
+                    self.contextSnapshot = value
                 }
-                if self.selectedContextTaskID == contextID { self.contextSnapshot = context }
-                else if !self.selectedContextTaskID.isEmpty { self.refreshTasks() }
+                if self.contextReadPending { self.refreshContext() }
             }
         }
     }

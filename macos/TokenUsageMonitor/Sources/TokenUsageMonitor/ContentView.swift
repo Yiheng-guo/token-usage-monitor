@@ -10,6 +10,8 @@ struct MonitorPanel: View {
     @State private var showsSettings = false
     @State private var showsSupplementalLimits = false
     @State private var hoveredDailyUsage: DailyUsage?
+    @State private var taskSearch = ""
+    @State private var showsAllTasks = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -295,9 +297,13 @@ struct MonitorPanel: View {
     }
 
     private var taskUsageCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let history = monitor.contextHistory.filter {
+            taskSearch.isEmpty || $0.displayTitle.localizedCaseInsensitiveContains(taskSearch) || $0.id.localizedCaseInsensitiveContains(taskSearch)
+        }
+        let visible = showsAllTasks || !taskSearch.isEmpty ? history : Array(history.prefix(10))
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("任务累计 Token").font(.subheadline.weight(.semibold))
+                Text("切换任务 · 累计 Token").font(.subheadline.weight(.semibold))
                 Spacer()
                 Button { monitor.refreshTasks() } label: {
                     HStack(spacing: 4) {
@@ -323,9 +329,12 @@ struct MonitorPanel: View {
             }
             Text("Codex 本地任务累计计数；重复输入可能累计计入，子代理是否合入尚未核实。")
                 .font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if monitor.taskRecords.isEmpty { Text("暂无任务记录").font(.caption).foregroundStyle(.secondary) }
-            ForEach(Array(monitor.taskRecords.prefix(10))) { task in
-                Button { monitor.selectedContextTaskID = task.id } label: {
+            TextField("搜索其他任务名称或编号", text: $taskSearch).textFieldStyle(.roundedBorder)
+            Text("已排除正在查看的任务 · 最近 100 条记录")
+                .font(.caption2).foregroundStyle(.secondary)
+            if visible.isEmpty { Text(taskSearch.isEmpty ? "暂无其他任务" : "没有匹配的其他任务").font(.caption).foregroundStyle(.secondary) }
+            ForEach(visible) { task in
+                Button { monitor.selectContextTask(task.id) } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "bubble.left.and.text.bubble.right")
                         .foregroundStyle(.secondary)
@@ -335,6 +344,8 @@ struct MonitorPanel: View {
                             .font(.caption.weight(.medium))
                             .lineLimit(1)
                         HStack(spacing: 5) {
+                            Text(String(task.id.suffix(8)))
+                            if task.archived { Text("已归档") }
                             Text(task.updatedAt, style: .relative)
                             if let model = task.model, !model.isEmpty {
                                 Text("·")
@@ -355,7 +366,11 @@ struct MonitorPanel: View {
                 }
                 .buttonStyle(.plain).padding(.vertical, 3).usageHover()
                 .help("\(task.displayTitle)\n累计 \(task.tokens.formatted()) tokens\n任务更新时间：\(task.updatedAt.formatted())\n点击查看此任务上下文")
-                if task.id != monitor.taskRecords.prefix(10).last?.id { Divider() }
+                if task.id != visible.last?.id { Divider() }
+            }
+            if taskSearch.isEmpty && history.count > 10 {
+                Button(showsAllTasks ? "收起任务列表" : "显示全部 \(history.count) 个其他任务") { showsAllTasks.toggle() }
+                    .font(.caption).usageHover()
             }
         }
         .padding(12)

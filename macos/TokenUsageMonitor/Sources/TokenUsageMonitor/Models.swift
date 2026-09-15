@@ -120,7 +120,7 @@ struct TaskUsageRecord: Codable, Identifiable, Equatable {
           AND thread_source = 'user'
           AND agent_role IS NULL
           AND id NOT IN (SELECT child_thread_id FROM thread_spawn_edges)
-        ORDER BY updated_at DESC
+        ORDER BY updated_at DESC, id ASC
         LIMIT 100;
     """
 
@@ -141,6 +141,46 @@ struct TaskUsageRecord: Codable, Identifiable, Equatable {
 struct TaskRecordsCache: Codable {
     var version: Int = 2
     var records: [TaskUsageRecord]
+}
+
+struct ContextTaskSelection {
+    private(set) var pinnedID: String?
+    private(set) var revision = 0
+
+    static func normalized(_ records: [TaskUsageRecord]) -> [TaskUsageRecord] {
+        var seen = Set<String>()
+        return records.sorted {
+            if $0.updatedAt != $1.updatedAt { return $0.updatedAt > $1.updatedAt }
+            if $0.id != $1.id { return $0.id < $1.id }
+            return $0.tokens > $1.tokens
+        }.filter { !$0.id.isEmpty && seen.insert($0.id).inserted }
+    }
+
+    static func latest(in records: [TaskUsageRecord]) -> TaskUsageRecord? {
+        records.first { !$0.archived }
+    }
+
+    func selected(in records: [TaskUsageRecord]) -> TaskUsageRecord? {
+        if let pinnedID { return records.first { $0.id == pinnedID } }
+        return Self.latest(in: records)
+    }
+
+    func history(in records: [TaskUsageRecord]) -> [TaskUsageRecord] {
+        let selectedID = selected(in: records)?.id
+        return records.filter { $0.id != selectedID }
+    }
+
+    mutating func select(_ id: String?) { pinnedID = id; revision += 1 }
+
+    mutating func reconcile(with records: [TaskUsageRecord]) {
+        if let pinnedID, !records.contains(where: { $0.id == pinnedID }) { select(nil) }
+    }
+
+    mutating func beginRead() -> Int { revision += 1; return revision }
+
+    func accepts(_ request: Int, threadID: String, records: [TaskUsageRecord]) -> Bool {
+        request == revision && selected(in: records)?.id == threadID
+    }
 }
 
 struct APIUsageRecord: Codable, Identifiable, Equatable {

@@ -6,6 +6,7 @@ final class MonitorStore: ObservableObject {
     @Published private(set) var snapshot: UsageSnapshot
     @Published private(set) var taskRecords: [TaskUsageRecord]
     @Published private(set) var apiRecords: [APIUsageRecord] = []
+    @Published private(set) var apiUsageDays: [APIUsageDay] = []
     @Published private(set) var apiUsageTotals: [String: Int] = [:]
     @Published private(set) var apiMonitorAvailable = false
     @Published private(set) var connectionState: MonitorConnectionState = .starting
@@ -83,7 +84,7 @@ final class MonitorStore: ObservableObject {
 
     init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        dataDirectory = support.appendingPathComponent("Token Usage Monitor", isDirectory: true)
+        dataDirectory = support.appendingPathComponent("Token Usage Insight", isDirectory: true)
         snapshotURL = dataDirectory.appendingPathComponent("menu-snapshot.json")
         taskRecordsURL = dataDirectory.appendingPathComponent("task-usage.json")
         try? FileManager.default.createDirectory(at: dataDirectory, withIntermediateDirectories: true)
@@ -105,7 +106,7 @@ final class MonitorStore: ObservableObject {
         thresholdText = defaults.string(forKey: Keys.thresholds) ?? "20, 5, 0"
         let storedWarning = defaults.integer(forKey: Keys.resetWarningMinutes)
         resetWarningMinutes = storedWarning == 0 ? 30 : storedWarning
-        automaticallyChecksForUpdates = defaults.object(forKey: Keys.automaticUpdateChecks) as? Bool ?? true
+        automaticallyChecksForUpdates = defaults.object(forKey: Keys.automaticUpdateChecks) as? Bool ?? false
         openAIBudgetText = defaults.string(forKey: Keys.openAIBudget) ?? ""
         deepSeekBudgetText = defaults.string(forKey: Keys.deepSeekBudget) ?? ""
         menuQuotaSource = MenuQuotaSource(rawValue: defaults.string(forKey: Keys.menuQuotaSource) ?? "") ?? .codex
@@ -291,9 +292,26 @@ final class MonitorStore: ObservableObject {
         NSWorkspace.shared.open(dataDirectory)
     }
 
+    /// Export only daily aggregates; private task names and request IDs never leave the database.
+    func exportAPIUsageCSV(days: Int) -> String? {
+        let rows = APIUsageInsights.filtered(apiUsageDays, days: days)
+        guard !rows.isEmpty else { return "所选时间内没有已上报的 API 用量" }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "token-usage-api-\(days)d.csv"
+        panel.canCreateDirectories = true
+        panel.title = "导出 API 用量汇总"
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        do {
+            try APIUsageInsights.csv(rows).write(to: url, atomically: true, encoding: .utf8)
+            return nil
+        } catch {
+            return "导出失败：\(error.localizedDescription)"
+        }
+    }
+
     func checkForUpdates() {
         guard !isCheckingForUpdates,
-              let url = URL(string: "https://github.com/w93139/token-usage-monitor/releases.atom") else { return }
+              let url = URL(string: "https://github.com/Yiheng-guo/token-usage-monitor/releases.atom") else { return }
         isCheckingForUpdates = true
         updateStatus = "正在检查更新…"
 
@@ -331,11 +349,11 @@ final class MonitorStore: ObservableObject {
     }
 
     private func firstReleaseURL(in feed: String) -> URL? {
-        let marker = "href=\"https://github.com/w93139/token-usage-monitor/releases/tag/"
+        let marker = "href=\"https://github.com/Yiheng-guo/token-usage-monitor/releases/tag/"
         guard let markerRange = feed.range(of: marker) else { return nil }
         let remainder = feed[markerRange.upperBound...]
         guard let end = remainder.firstIndex(of: "\"") else { return nil }
-        return URL(string: "https://github.com/w93139/token-usage-monitor/releases/tag/" + String(remainder[..<end]))
+        return URL(string: "https://github.com/Yiheng-guo/token-usage-monitor/releases/tag/" + String(remainder[..<end]))
     }
 
     func openAvailableUpdate() {
@@ -451,6 +469,7 @@ final class MonitorStore: ObservableObject {
             let apis = Result { try self.readAPIUsageRecords() }
             let totals = Result { try self.readAPIUsageTotals() }
             let activity = Result { try self.readAPIActivity() }
+            let insights = Result { try self.readAPIUsageDays() }
             let healthy = self.isAPIUsageServerHealthy()
             DispatchQueue.main.async {
                 guard !self.stopped else { self.isRefreshingTasks = false; return }
@@ -473,9 +492,11 @@ final class MonitorStore: ObservableObject {
                     let rows = try apis.get()
                     let sums = try totals.get()
                     let received = try activity.get()
+                    let days = try insights.get()
                     self.apiRecords = rows
                     self.apiUsageTotals = sums
                     self.apiActivity = received
+                    self.apiUsageDays = days
                     self.apiReadError = nil
                     self.apiReadAt = Date()
                 } catch { self.apiReadError = "读取失败，保留上次 API 数据" }
@@ -584,7 +605,7 @@ final class MonitorStore: ObservableObject {
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: python)
-        process.arguments = [serverScript.path, "--port", "47821"]
+        process.arguments = [serverScript.path, "--port", "47822"]
         process.currentDirectoryURL = resources
         var environment = ProcessInfo.processInfo.environment
         environment["TOKEN_USAGE_MONITOR_HOME"] = dataDirectory.path
@@ -622,7 +643,7 @@ final class MonitorStore: ObservableObject {
     }
 
     private func isAPIUsageServerHealthy() -> Bool {
-        guard let url = URL(string: "http://127.0.0.1:47821/health") else { return false }
+        guard let url = URL(string: "http://127.0.0.1:47822/health") else { return false }
         var request = URLRequest(url: url)
         request.timeoutInterval = 0.75
         let semaphore = DispatchSemaphore(value: 0)
@@ -632,11 +653,41 @@ final class MonitorStore: ObservableObject {
             guard let http = response as? HTTPURLResponse, http.statusCode == 200, let data,
                   let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
             isHealthy = payload["ok"] as? Bool == true
-                && payload["service"] as? String == "token-usage-monitor"
+                && payload["service"] as? String == "token-usage-insight"
         }
         task.resume()
         if semaphore.wait(timeout: .now() + 1) == .timedOut { task.cancel() }
         return isHealthy
+    }
+
+    private func readAPIUsageDays() throws -> [APIUsageDay] {
+        let database = dataDirectory.appendingPathComponent("usage.sqlite3")
+        guard FileManager.default.fileExists(atPath: database.path) else { return [] }
+        let cutoff = Int(Date().timeIntervalSince1970) - 31 * 86_400
+        let query = """
+        SELECT date(captured_at, 'unixepoch', 'localtime') AS day,
+               LOWER(provider) AS provider, model,
+               COUNT(*) AS calls, SUM(input_tokens) AS inputTokens,
+               SUM(cached_input_tokens) AS cachedInputTokens,
+               SUM(output_tokens) AS outputTokens,
+               SUM(reasoning_tokens) AS reasoningTokens,
+               SUM(total_tokens) AS totalTokens
+        FROM api_usage WHERE captured_at >= \(cutoff)
+        GROUP BY day, LOWER(provider), model
+        ORDER BY day DESC, totalTokens DESC;
+        """
+        let data = try runLocalProcess(executable: "/usr/bin/sqlite3", arguments: ["-readonly", "-json", database.path, query])
+        guard !data.isEmpty else { return [] }
+        guard let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { throw MonitorError.invalidResponse }
+        return rows.compactMap { row in
+            guard let day = row.string("day"), let provider = row.string("provider"), let model = row.string("model"),
+                  let calls = row.integer("calls"), let input = row.integer("inputTokens"),
+                  let cached = row.integer("cachedInputTokens"), let output = row.integer("outputTokens"),
+                  let reasoning = row.integer("reasoningTokens"), let total = row.integer("totalTokens") else { return nil }
+            return APIUsageDay(date: day, provider: provider, model: model, calls: calls,
+                inputTokens: input, cachedInputTokens: cached, outputTokens: output,
+                reasoningTokens: reasoning, totalTokens: total)
+        }
     }
 
     private func readAPIUsageRecords() throws -> [APIUsageRecord] {

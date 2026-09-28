@@ -28,4 +28,4 @@ jobs:
       - name: Verify context and budget models
         run: macos/TokenUsageMonitor/scripts/test_models.sh
       - name: Verify application signature
-        run: codesign --verify --deep --strict "macos/TokenUsageMonitor/dist/Token监测.app"
+        run: codesign --verify --deep --strict "macos/TokenUsageMonitor/dist/Token洞察.app"

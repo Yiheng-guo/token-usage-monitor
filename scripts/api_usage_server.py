@@ -42,7 +42,7 @@ class UsageHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path == "/health":
-            self._send(200, {"ok": True, "service": "token-usage-monitor"})
+            self._send(200, {"ok": True, "service": "token-usage-insight"})
             return
         if parsed.path == "/v1/usage":
             query = parse_qs(parsed.query)
@@ -87,7 +87,7 @@ class UsageHTTPServer(ThreadingHTTPServer):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Local API token-usage ingestion server")
-    parser.add_argument("--port", type=int, default=47821)
+    parser.add_argument("--port", type=int, default=47822)
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535:
         raise SystemExit("port must be between 1024 and 65535")

@@ -1,16 +1,16 @@
 {
-  "name": "token-usage-monitor",
-  "version": "0.1.0+codex.20260915160221",
-  "description": "Track Codex tasks, API token usage, and rate-limit resets locally in real time.",
+  "name": "token-usage-insight",
+  "version": "0.2.0+codex.20260928",
+  "description": "Local-first Codex and API token insights with private daily analytics and CSV export.",
   "author": {
-    "name": "w93139"
+    "name": "Yiheng-guo"
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "Token\u76d1\u6d4b",
-    "shortDescription": "Track task and API token usage locally.",
+    "displayName": "Token洞察",
+    "shortDescription": "Explore local token usage and export private aggregates.",
     "longDescription": "A privacy-focused local monitor for per-task Codex token totals, OpenAI-compatible API usage including DeepSeek, daily history, rate-limit windows, reset credits, and threshold notifications. It stores usage metadata only and never stores prompts, responses, or API keys.",
-    "developerName": "w93139",
+    "developerName": "Yiheng-guo",
     "category": "Productivity",
     "capabilities": [
       "Read",

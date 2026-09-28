@@ -12,6 +12,8 @@ struct MonitorPanel: View {
     @State private var hoveredDailyUsage: DailyUsage?
     @State private var taskSearch = ""
     @State private var showsAllTasks = false
+    @State private var apiInsightDays = 7
+    @State private var apiExportError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,7 +43,7 @@ struct MonitorPanel: View {
                     .frame(width: 40, height: 40)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Token监测").font(.headline)
+                Text("Token洞察").font(.headline)
                 HStack(spacing: 5) {
                     Circle()
                         .fill(monitor.connectionState.isConnected ? Color.green : Color.orange)
@@ -133,6 +135,7 @@ struct MonitorPanel: View {
             if let account = monitor.snapshot.account { summaryCard(account) }
             ContextUsageCard(monitor: monitor)
             taskUsageCard
+            apiInsightsCard
             apiUsageCard
             if !monitor.snapshot.dailyUsage.isEmpty { historyChart }
 
@@ -436,6 +439,68 @@ struct MonitorPanel: View {
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
     }
 
+    private var apiInsightsCard: some View {
+        let rows = APIUsageInsights.filtered(monitor.apiUsageDays, days: apiInsightDays)
+        let total = rows.reduce(0) { $0 + $1.totalTokens }
+        let calls = rows.reduce(0) { $0 + $1.calls }
+        let daily = Dictionary(grouping: rows, by: \.date)
+            .map { DailyUsage(date: $0.key, tokens: $0.value.reduce(0) { $0 + $1.totalTokens }) }
+            .sorted { $0.date < $1.date }
+        let byModel = Dictionary(grouping: rows, by: { "\($0.provider) / \($0.model)" })
+            .mapValues { $0.reduce(0) { $0 + $1.totalTokens } }
+        let topModels = byModel.keys.sorted { byModel[$0, default: 0] > byModel[$1, default: 0] }.prefix(5)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("API 用量分析").font(.subheadline.weight(.semibold))
+                Spacer()
+                Picker("时间", selection: $apiInsightDays) {
+                    Text("7 天").tag(7)
+                    Text("30 天").tag(30)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 130)
+            }
+            Text("仅统计本机接收端收到的响应 usage；缺失上报的调用不计入。Codex 订阅额度与本地 API 预算另列。")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if rows.isEmpty {
+                Text("所选时间暂无 API 用量记录").font(.caption).foregroundStyle(.secondary)
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(total.formatted()) tokens").font(.title3.monospacedDigit().weight(.semibold))
+                    Spacer()
+                    Text("\(calls.formatted()) 次上报").font(.caption).foregroundStyle(.secondary)
+                }
+                Chart(daily) { item in
+                    BarMark(x: .value("日期", item.date), y: .value("Token", item.tokens))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .frame(height: 100)
+                .accessibilityLabel("最近 \(apiInsightDays) 天 API 每日 Token 用量")
+                ForEach(Array(topModels), id: \.self) { name in
+                    HStack {
+                        Text(name).lineLimit(1)
+                        Spacer()
+                        Text(byModel[name, default: 0].formatted()).monospacedDigit()
+                    }
+                    .font(.caption)
+                }
+                Button("导出这 \(apiInsightDays) 天的 CSV") {
+                    apiExportError = monitor.exportAPIUsageCSV(days: apiInsightDays)
+                }
+                .font(.caption)
+                .usageHover()
+                if let apiExportError {
+                    Text(apiExportError).font(.caption2).foregroundStyle(.orange)
+                }
+                Text("CSV 为按天、渠道和模型汇总的数据，不含任务名、请求 ID 或对话正文。")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+    }
+
     private func apiQuotaRow(_ quota: APIQuotaSummary) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .center) {
@@ -538,14 +603,14 @@ struct MonitorPanel: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("本机记录端点").font(.subheadline)
-                        Text("http://127.0.0.1:47821/v1/usage")
+                        Text("http://127.0.0.1:47822/v1/usage")
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button("复制") {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString("http://127.0.0.1:47821/v1/usage", forType: .string)
+                        NSPasteboard.general.setString("http://127.0.0.1:47822/v1/usage", forType: .string)
                     }
                 }
                 Text("将 OpenAI、DeepSeek 或兼容 API 响应中的 usage 对象发送到此端点，即可按模型和任务记录。API Key 不应发送给监控器。")
@@ -586,7 +651,7 @@ struct MonitorPanel: View {
             .help("刷新账户额度与本地记录")
             .usageHover()
             Menu {
-                Button("退出 Token监测") { NSApplication.shared.terminate(nil) }
+                Button("退出 Token洞察") { NSApplication.shared.terminate(nil) }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }

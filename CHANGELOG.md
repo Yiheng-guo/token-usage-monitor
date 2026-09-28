@@ -2,6 +2,20 @@
 
 All notable changes to Token监测 are documented here.
 
+## [1.8.0] - 2026-09-28 (Yiheng-guo Fork)
+
+### Added
+
+- 7/30-day API response usage trend and top channel/model summaries, based only on records received by the local listener.
+- Aggregate-only CSV export for the selected period; task names and request IDs are excluded, and spreadsheet formulas in labels are escaped.
+- Clearer UI disclosure separating Codex subscription limits, local API budgets, task lifetime counters, and observed API calls.
+
+### Changed
+
+- Independent app identity, data folder, and loopback port 47822 to coexist with the original application.
+- Release links now point to this fork; automatic update checks are disabled by default until a fork release is available.
+- Fork name is Token洞察; original MIT copyright remains in LICENSE.
+
 ## [1.7.1] - 2026-09-16
 
 ### Fixed

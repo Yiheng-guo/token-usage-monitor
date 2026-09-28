@@ -37,7 +37,7 @@ class APIUsageServerTests(unittest.TestCase):
     def test_health_ingestion_history_and_deduplication(self):
         status, health = self.read_json(f"{self.base_url}/health")
         self.assertEqual(status, 200)
-        self.assertEqual(health, {"ok": True, "service": "token-usage-monitor"})
+        self.assertEqual(health, {"ok": True, "service": "token-usage-insight"})
 
         payload = {
             "provider": "openai",

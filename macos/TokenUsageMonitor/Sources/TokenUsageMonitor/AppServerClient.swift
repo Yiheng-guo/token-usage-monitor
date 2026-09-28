@@ -37,7 +37,7 @@ final class AppServerClient {
                     method: "initialize",
                     params: ["clientInfo": [
                         "name": "token_usage_monitor_macos",
-                        "title": "Token监测",
+                        "title": "Token洞察",
                         "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.7.0"
                     ]],
                     timeout: 12

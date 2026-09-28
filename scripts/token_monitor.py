@@ -21,7 +21,7 @@ from typing import Any, Callable
 from context_snapshot import resolve_database
 
 
-PLUGIN_VERSION = "0.1.0"
+PLUGIN_VERSION = "0.2.0"
 
 
 def _now() -> int:
@@ -37,9 +37,9 @@ def default_data_dir() -> Path:
     if override:
         return Path(override).expanduser().resolve()
     if platform.system() == "Darwin":
-        return Path.home() / "Library" / "Application Support" / "Token Usage Monitor"
+        return Path.home() / "Library" / "Application Support" / "Token Usage Insight"
     base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    return base / "token-usage-monitor"
+    return base / "token-usage-insight"
 
 
 def find_codex_binary() -> str | None:
@@ -557,7 +557,7 @@ class AppServerClient:
                 self._spawn(args, mode)
                 self.request(
                     "initialize",
-                    {"clientInfo": {"name": "token_usage_monitor", "title": "Token监测", "version": PLUGIN_VERSION}},
+                    {"clientInfo": {"name": "token_usage_monitor", "title": "Token洞察", "version": PLUGIN_VERSION}},
                     timeout=12,
                 )
                 self.notify("initialized", {})

@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
-    <key>CFBundleDisplayName</key><string>Token监测</string>
+    <key>CFBundleDisplayName</key><string>Token洞察</string>
     <key>CFBundleExecutable</key><string>TokenUsageMonitor</string>
     <key>CFBundleIconFile</key><string>AppIcon-v2</string>
-    <key>CFBundleIdentifier</key><string>local.codex.token-usage-monitor</string>
+    <key>CFBundleIdentifier</key><string>com.yihengguo.token-usage-insight</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-    <key>CFBundleName</key><string>Token监测</string>
+    <key>CFBundleName</key><string>Token洞察</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.7.1</string>
-    <key>CFBundleVersion</key><string>14</string>
+    <key>CFBundleShortVersionString</key><string>1.8.0</string>
+    <key>CFBundleVersion</key><string>15</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHumanReadableCopyright</key><string>Local-first Codex usage monitor</string>

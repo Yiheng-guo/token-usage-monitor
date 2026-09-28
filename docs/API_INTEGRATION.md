@@ -1,19 +1,19 @@
 # API Integration Guide
 
-Token监测 records usage metadata returned by OpenAI, DeepSeek, and OpenAI-compatible APIs. It does
+Token洞察 records usage metadata returned by OpenAI, DeepSeek, and OpenAI-compatible APIs. It does
 not proxy requests and must never receive an API key, prompt, or model response body.
 
 ## Endpoint
 
 ```text
-POST http://127.0.0.1:47821/v1/usage
+POST http://127.0.0.1:47822/v1/usage
 Content-Type: application/json
 ```
 
 The macOS application must be running. Check availability with:
 
 ```bash
-curl http://127.0.0.1:47821/health
+curl http://127.0.0.1:47822/health
 ```
 
 ## OpenAI-style response
@@ -67,7 +67,7 @@ double-count the usage.
 ## Quota display
 
 Provider responses usually do not expose a common account-wide Token allowance. Enter the OpenAI
-or DeepSeek total Token budget in Token监测 settings. The application calculates:
+or DeepSeek total Token budget in Token洞察 settings. The application calculates:
 
 ```text
 remaining = configured budget - locally recorded usage
@@ -79,7 +79,7 @@ Budgets stay in local macOS preferences. Provider credentials are never requeste
 
 - Send only provider, model, optional task name, request ID, and numeric usage counters.
 - Never send authorization headers, API keys, prompts, model responses, or uploaded files.
-- Keep the endpoint bound to loopback; do not expose port 47821 through a proxy or tunnel.
+- Keep the endpoint bound to loopback; do not expose port 47822 through a proxy or tunnel.
 
 
 ## Relay / custom channels (1.7.0)

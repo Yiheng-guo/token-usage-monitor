@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Token监测.
+Thanks for helping improve Token洞察.
 
 ## Development setup
 
@@ -20,7 +20,7 @@ Build and verify the macOS application:
 
 ```bash
 macos/TokenUsageMonitor/scripts/build_app.sh
-codesign --verify --deep --strict "macos/TokenUsageMonitor/dist/Token监测.app"
+codesign --verify --deep --strict "macos/TokenUsageMonitor/dist/Token洞察.app"
 ```
 
 ## Pull requests

@@ -16,6 +16,18 @@ struct ModelChecks {
         require(quota.displayName == "中转站", "Custom display name")
         let unknown = APIQuotaSummary(provider: "relay", usedTokens: 250, budgetTokens: nil)
         require(unknown.remainingPercent == nil, "Missing budget is not zero percent")
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = TimeZone(secondsFromGMT: 0)!
+        let exampleDay = APIUsageDay(date: "2026-09-28", provider: "openai", model: "=HYPERLINK(\"bad\")",
+            calls: 2, inputTokens: 10, cachedInputTokens: 3, outputTokens: 4, reasoningTokens: 1, totalTokens: 14)
+        let oldDay = APIUsageDay(date: "2026-09-20", provider: "openai", model: "other",
+            calls: 1, inputTokens: 1, cachedInputTokens: 0, outputTokens: 0, reasoningTokens: 0, totalTokens: 1)
+        let today = Date(timeIntervalSince1970: 1_790_553_600) // 2026-09-28 UTC
+        require(APIUsageInsights.filtered([oldDay, exampleDay], days: 7, today: today, calendar: gregorian) == [exampleDay], "Seven-day range")
+        let csv = APIUsageInsights.csv([exampleDay])
+        require(csv.contains("'=HYPERLINK"), "Spreadsheet formulas must be escaped")
+        require(!csv.contains("request_id") && !csv.contains("task_name"), "Export contains aggregates only")
+        require(csv.contains("\"\"bad\"\""), "CSV quotes must be escaped")
         let exceeded = APIQuotaSummary(provider: "relay", usedTokens: 1200, budgetTokens: 1000)
         require(exceeded.remainingTokens == 0 && exceeded.remainingPercent == 0, "Budget overrun clamps remaining")
         let decoder = JSONDecoder()

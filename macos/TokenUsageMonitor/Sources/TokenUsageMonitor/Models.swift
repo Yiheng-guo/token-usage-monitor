@@ -85,6 +85,49 @@ struct APIActivity: Equatable {
     var lastReceivedAt: Date
 }
 
+/// Aggregated response metadata. No task names or request identifiers enter this model.
+struct APIUsageDay: Identifiable, Equatable {
+    var date: String
+    var provider: String
+    var model: String
+    var calls: Int
+    var inputTokens: Int
+    var cachedInputTokens: Int
+    var outputTokens: Int
+    var reasoningTokens: Int
+    var totalTokens: Int
+    var id: String { "\(date)|\(provider)|\(model)" }
+}
+
+enum APIUsageInsights {
+    static func filtered(_ rows: [APIUsageDay], days: Int, today: Date = Date(), calendar: Calendar = .current) -> [APIUsageDay] {
+        guard let start = calendar.date(byAdding: .day, value: -(days - 1), to: calendar.startOfDay(for: today)) else { return [] }
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        let startKey = formatter.string(from: start)
+        let endKey = formatter.string(from: today)
+        return rows.filter { $0.date >= startKey && $0.date <= endKey }
+    }
+
+    static func csv(_ rows: [APIUsageDay]) -> String {
+        func cell(_ value: String) -> String {
+            // Spreadsheet applications may execute values starting with formula characters.
+            let guarded = value.first.map { "=+-@\t\r\n".contains($0) } == true ? "'" + value : value
+            return "\"" + guarded.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        }
+        let header = "date,provider,model,calls,input_tokens,cached_input_tokens,output_tokens,reasoning_tokens,total_tokens"
+        let lines = rows.sorted { ($0.date, $0.provider, $0.model) < ($1.date, $1.provider, $1.model) }.map { row in
+            [cell(row.date), cell(row.provider), cell(row.model), String(row.calls), String(row.inputTokens),
+             String(row.cachedInputTokens), String(row.outputTokens), String(row.reasoningTokens), String(row.totalTokens)]
+                .joined(separator: ",")
+        }
+        return ([header] + lines).joined(separator: "\r\n") + "\r\n"
+    }
+}
+
 struct ContextSnapshot: Decodable, Equatable {
     var threadId: String
     var tokens: Int?

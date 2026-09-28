@@ -1,8 +1,12 @@
-# Token监测 for macOS
+# Token洞察 for macOS
 
-Native macOS 13+ menu-bar companion for the Token Usage Monitor Codex plugin.
+Native macOS 13+ menu-bar companion for the Token Usage Insight Codex plugin.
 
-## Version 1.7.1
+## Version 1.8.0
+
+Adds 7/30-day API response usage insights by provider and model, plus aggregate-only CSV export. The fork uses its own data directory, loopback port 47822, and bundle identifier so it can coexist with upstream.
+
+## Upstream 1.7.1
 
 Context switching now uses one searchable history list, excluding the selected task. Automatic mode follows the latest updated non-archived task; manual history selection stays fixed until returning or disappearing from available records. Same-name tasks retain separate short IDs. Context reads run independently and discard obsolete requests during rapid switching.
 
@@ -40,7 +44,7 @@ Context reads only usage/reset metadata from a bounded in-memory tail of the sel
 ./scripts/build_app.sh
 ```
 
-The finished app is written to `dist/Token监测.app`. Move it to the
+The finished app is written to `dist/Token洞察.app`. Move it to the
 Applications folder and launch it; the remaining-quota percentage will appear in the
 menu bar. The app requires a local Codex CLI installation, an authenticated
 Codex session, and macOS 13 or newer.

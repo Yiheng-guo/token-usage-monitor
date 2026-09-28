@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "token-usage-monitor": {
+    "token-usage-insight": {
       "cwd": ".",
       "command": "python3",
       "args": [

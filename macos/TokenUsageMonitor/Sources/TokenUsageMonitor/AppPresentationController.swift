@@ -53,7 +53,7 @@ final class AppPresentationController: NSObject, ObservableObject, NSWindowDeleg
             backing: .buffered,
             defer: false
         )
-        window.title = "Token监测"
+        window.title = "Token洞察"
         window.minSize = NSSize(width: 390, height: 540)
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -140,6 +140,6 @@ private struct QuotaBadgeView: View {
         .background(.regularMaterial, in: Capsule())
         .overlay(Capsule().stroke(Color.primary.opacity(0.16), lineWidth: 0.5))
         .contentShape(Capsule())
-        .help("拖动调整位置；在 Token监测中点击图钉可隐藏")
+        .help("拖动调整位置；在 Token洞察中点击图钉可隐藏")
     }
 }

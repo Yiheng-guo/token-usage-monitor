@@ -1,11 +1,11 @@
 ---
-name: token-usage-monitor
+name: token-usage-insight
 description: Inspect local Codex task token activity, conversation-level history, rate-limit windows, reset times, and OpenAI-compatible API usage such as OpenAI or DeepSeek. Use when the user asks about token consumption, per-task totals, model usage, remaining Codex allowance, weekly limits, reset timing, extra refreshes, or usage alerts.
 ---
 
-# Token监测 (Token Usage Monitor)
+# Token洞察 (Token Usage Insight)
 
-Use the `token-usage-monitor` MCP tools as the source of truth for local usage data.
+Use the `token-usage-insight` MCP tools as the source of truth for local usage data.
 
 ## Workflow
 

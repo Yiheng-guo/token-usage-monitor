@@ -1,6 +1,6 @@
 {
   "name": "token-usage-insight",
-  "version": "0.2.0+codex.20260928",
+  "version": "0.2.1+codex.20261002",
   "description": "Local-first Codex and API token insights with private daily analytics and CSV export.",
   "author": {
     "name": "Yiheng-guo"

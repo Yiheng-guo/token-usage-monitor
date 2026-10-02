@@ -2,6 +2,14 @@
 
 All notable changes to Token监测 are documented here.
 
+## [1.8.1] - 2026-10-02 (Yiheng-guo Fork)
+
+### Fixed
+
+- Discover the Codex CLI in the current ChatGPT app bundle after the October 2026 desktop update. The previous path disappeared, leaving the menu app on a stale quota snapshot while task reads continued.
+- Accept `CODEX_CLI_PATH` and check executable candidates for both the native app and Python collector.
+- Show the actual connection error while displaying cached quota data, so a missing CLI is distinguishable from a temporary network failure.
+
 ## [1.8.0] - 2026-09-28 (Yiheng-guo Fork)
 
 ### Added

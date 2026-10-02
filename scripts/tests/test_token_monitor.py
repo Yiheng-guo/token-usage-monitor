@@ -11,7 +11,17 @@ SCRIPT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPT_DIR))
 os.environ["TOKEN_USAGE_MONITOR_DISABLE_NOTIFICATIONS"] = "1"
 
-from token_monitor import UsageMonitor, UsageStore  # noqa: E402
+from token_monitor import UsageMonitor, UsageStore, find_codex_binary  # noqa: E402
+
+
+class BinaryDiscoveryTests(unittest.TestCase):
+    def test_current_cli_environment_path(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = Path(folder) / "codex"
+            binary.write_text("#!/bin/sh\n")
+            binary.chmod(0o755)
+            with patch.dict(os.environ, {"CODEX_BINARY": "/missing/old/codex", "CODEX_CLI_PATH": str(binary)}):
+                self.assertEqual(find_codex_binary(), str(binary))
 
 
 class UsageStoreTests(unittest.TestCase):

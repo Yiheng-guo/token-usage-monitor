@@ -38,7 +38,7 @@ final class AppServerClient {
                     params: ["clientInfo": [
                         "name": "token_usage_monitor_macos",
                         "title": "Token洞察",
-                        "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.7.0"
+                        "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.8.1"
                     ]],
                     timeout: 12
                 )
@@ -192,24 +192,11 @@ final class AppServerClient {
 
     private static func findCodexBinary() -> String? {
         let environment = ProcessInfo.processInfo.environment
-        if let override = environment["CODEX_BINARY"], FileManager.default.isExecutableFile(atPath: override) {
-            return override
-        }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        var candidates = [
-            "/Applications/ChatGPT.app/Contents/Resources/codex",
-            "\(home)/Applications/ChatGPT.app/Contents/Resources/codex",
-            "/Applications/Codex.app/Contents/Resources/codex",
-            "\(home)/Applications/Codex.app/Contents/Resources/codex",
-            "/opt/homebrew/bin/codex",
-            "/usr/local/bin/codex"
-        ]
+        var candidates = CodexBinaryLocator.candidates(home: home, environment: environment)
         let nvmRoot = "\(home)/.nvm/versions/node"
         if let versions = try? FileManager.default.contentsOfDirectory(atPath: nvmRoot) {
             candidates.append(contentsOf: versions.sorted().reversed().map { "\(nvmRoot)/\($0)/bin/codex" })
-        }
-        if let path = environment["PATH"] {
-            candidates.append(contentsOf: path.split(separator: ":").map { "\($0)/codex" })
         }
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }

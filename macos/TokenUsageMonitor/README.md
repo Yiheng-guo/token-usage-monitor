@@ -2,6 +2,10 @@
 
 Native macOS 13+ menu-bar companion for the Token Usage Insight Codex plugin.
 
+## Version 1.8.1
+
+Fixes quota refresh after the October 2026 ChatGPT app update moved the bundled Codex CLI. The app now discovers both the current and older CLI layouts and shows a specific connection error while displaying a cached quota.
+
 ## Version 1.8.0
 
 Adds 7/30-day API response usage insights by provider and model, plus aggregate-only CSV export. The fork uses its own data directory, loopback port 47822, and bundle identifier so it can coexist with upstream.

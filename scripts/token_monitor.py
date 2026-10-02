@@ -43,9 +43,18 @@ def default_data_dir() -> Path:
 
 
 def find_codex_binary() -> str | None:
-    override = os.environ.get("CODEX_BINARY")
-    if override and Path(override).expanduser().is_file():
-        return str(Path(override).expanduser())
+    for key in ("CODEX_BINARY", "CODEX_CLI_PATH"):
+        override = os.environ.get(key)
+        if override and os.access(Path(override).expanduser(), os.X_OK):
+            return str(Path(override).expanduser())
+    for app in (Path.home() / "Applications" / "ChatGPT.app", Path("/Applications/ChatGPT.app"),
+                Path.home() / "Applications" / "Codex.app", Path("/Applications/Codex.app")):
+        candidate = app / "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
+        if os.access(candidate, os.X_OK):
+            return str(candidate)
+        legacy = app / "Contents/Resources/codex"
+        if os.access(legacy, os.X_OK):
+            return str(legacy)
     found = shutil.which("codex")
     if found:
         return found

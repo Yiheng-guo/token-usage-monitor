@@ -1,5 +1,22 @@
 import Foundation
 
+enum CodexBinaryLocator {
+    static func candidates(home: String, environment: [String: String]) -> [String] {
+        var paths = [environment["CODEX_BINARY"], environment["CODEX_CLI_PATH"]].compactMap { $0 }
+        for app in ["\(home)/Applications/ChatGPT.app", "/Applications/ChatGPT.app",
+                    "\(home)/Applications/Codex.app", "/Applications/Codex.app"] {
+            paths.append("\(app)/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")
+            paths.append("\(app)/Contents/Resources/codex")
+        }
+        paths += ["/opt/homebrew/bin/codex", "/usr/local/bin/codex"]
+        if let path = environment["PATH"] {
+            paths += path.split(separator: ":").map { "\($0)/codex" }
+        }
+        var seen = Set<String>()
+        return paths.filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+}
+
 struct AccountSummary: Codable, Equatable {
     var lifetimeTokens: Int?
     var peakDailyTokens: Int?

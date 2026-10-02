@@ -4,6 +4,11 @@ import Foundation
 struct ModelChecks {
     static func main() throws {
         func require(_ value: Bool, _ message: String) { precondition(value, message) }
+        let bundledCLI = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
+        let binaryCandidates = CodexBinaryLocator.candidates(home: "/Users/test", environment: ["CODEX_CLI_PATH": bundledCLI])
+        require(binaryCandidates.first == bundledCLI, "Prefer current Codex CLI path from environment")
+        require(binaryCandidates.contains(bundledCLI), "Find CLI in current ChatGPT app bundle")
+        require(binaryCandidates.count == Set(binaryCandidates).count, "Avoid duplicate binary candidates")
         for invalid in ["", "0", "-1", "1.5", "1,000", "1e6", "100abc", String(repeating: "9", count: 30)] {
             require(APIChannel.parseBudget(invalid) == nil, "Invalid budget must stay unknown: \(invalid)")
         }

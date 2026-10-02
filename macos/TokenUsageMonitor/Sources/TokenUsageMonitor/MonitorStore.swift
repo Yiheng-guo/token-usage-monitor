@@ -438,9 +438,8 @@ final class MonitorStore: ObservableObject {
             consecutiveQuotaFailures += 1
             let hasCachedQuota = !snapshot.rateWindows.isEmpty
             DispatchQueue.main.async {
-                self.lastError = hasCachedQuota
-                    ? "账户额度暂时无法更新，正在显示上次数据；任务 Token 记录不受影响。"
-                    : self.friendlyConnectionError(error)
+                let reason = self.friendlyConnectionError(error)
+                self.lastError = hasCachedQuota ? "正在显示缓存额度。\(reason)" : reason
                 self.isRefreshing = false
                 self.connectionState = hasCachedQuota ? .cached : .retrying("正在自动重试")
             }

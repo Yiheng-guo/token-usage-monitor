@@ -16,7 +16,7 @@
 
 ## 运行与构建
 
-要求 Apple Silicon Mac、macOS 13+、本地 Codex/ChatGPT 登录环境。可以从[本仓库最新 Release](https://github.com/Yiheng-guo/token-usage-monitor/releases/latest)下载 `Token-Insight-macOS-arm64-v1.8.0.zip`，解压并将 `Token洞察.app` 移入“应用程序”。首次打开时，macOS 可能要求在“系统设置 → 隐私与安全性”中确认。
+要求 Apple Silicon Mac、macOS 13+、本地 Codex/ChatGPT 登录环境。可以从[本仓库最新 Release](https://github.com/Yiheng-guo/token-usage-monitor/releases/latest)下载 `Token-Insight-macOS-arm64-v1.8.1.zip`，解压并将 `Token洞察.app` 移入“应用程序”。首次打开时，macOS 可能要求在“系统设置 → 隐私与安全性”中确认。
 
 也可以使用 Swift 工具链从源码构建：
 
